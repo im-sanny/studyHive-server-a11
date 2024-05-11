@@ -1,4 +1,4 @@
-const { MongoClient, ServerApiVersion } = require("mongodb");
+const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
@@ -31,7 +31,14 @@ async function run() {
     app.get('/asnmnts', async(req, res) => {
         const result = await asnCollection.find().toArray()
         res.send(result);
-        console.log("hhhhhhhhhhhh",result);
+    })
+
+    // get a single assignment data 
+    app.get('/asnmnt/:id', async(req, res) =>{
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await asnCollection.findOne(query)
+      res.send(result)
     })
     
     await client.db("admin").command({ ping: 1 });
