@@ -25,7 +25,7 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     const asnCollection = client.db('studyHive').collection('asnmnts')
-    // const exampleCollection = client.db('studyHiveDB').collection('example')
+    const takeAsnCollection = client.db('studyHive').collection('takeAsnmnts')
 
     //get all assignment data from db
     app.get('/asnmnts', async(req, res) => {
@@ -38,6 +38,15 @@ async function run() {
       const id = req.params.id
       const query = {_id: new ObjectId(id)}
       const result = await asnCollection.findOne(query)
+      res.send(result)
+    })
+
+    // save a take assignment in db
+    app.post('/takeAsnmnt', async(req,res)=>{
+      const takeData = req.body
+      console.log(takeData);
+      // return
+      const result = await takeAsnCollection.insertOne(takeData)
       res.send(result)
     })
     
