@@ -1,7 +1,8 @@
+const { MongoClient, ServerApiVersion } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
 require("dotenv").config();
-const port = process.env.PORT || 6000;
+const port = process.env.PORT || 3000;
 
 const app = express();
 const corsOptions = {
@@ -12,9 +13,38 @@ const corsOptions = {
 app.use(cors(corsOptions));
 app.use(express.json());
 
+const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.96corz1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
+
+const client = new MongoClient(uri, {
+  serverApi: {
+    version: ServerApiVersion.v1,
+    strict: true,
+    deprecationErrors: true,
+  },
+});
+async function run() {
+  try {
+    const asnCollection = client.db('studyHive').collection('asnmnts')
+    // const exampleCollection = client.db('studyHiveDB').collection('example')
+
+    //get all assignment data from db
+    app.get('/asnmnts', async(req, res) => {
+        const result = await asnCollection.find().toArray()
+        res.send(result);
+        console.log("hhhhhhhhhhhh",result);
+    })
+    
+    await client.db("admin").command({ ping: 1 });
+    console.log(
+      "Pinged your deployment. You successfully connected to MongoDB!"
+    );
+  } finally {
+  }
+}
+run().catch(console.dir);
+
 app.get("/", (req, res) => {
-    res.send("Hello from StudyHive server...");
+  res.send("Hello from StudyHive server...");
 });
 
 app.listen(port, () => console.log(`Server running on port ${port}`));
-
