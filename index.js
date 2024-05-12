@@ -66,6 +66,21 @@ async function run() {
       res.send(result);
     });
 
+    // update a assignment in db
+    app.put('/asnmnt/:id', async (req, res) =>{
+      const id = req.params.id
+      const asnmntData = req.body
+      const query = {_id: new ObjectId(id)}
+      const options = {upsert: true}
+      const updateDoc={
+        $set:{
+          ...asnmntData,
+        }
+      }
+      const result = await asnCollection.updateOne(query, updateDoc, options)
+      res.send(result);
+    })
+
     // save a take assignment in db
     app.post("/takeAsnmnt", async (req, res) => {
       const takeData = req.body;
