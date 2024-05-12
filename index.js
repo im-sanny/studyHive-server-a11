@@ -6,7 +6,11 @@ const port = process.env.PORT || 3000;
 
 const app = express();
 const corsOptions = {
-  origin: ["http://localhost:5173", "http://localhost:5174"],
+  origin: [
+    "http://localhost:5173",
+    "https://b9a11-a9c79.web.app",
+    "https://b9a11-a9c79.firebaseapp.com",
+  ],
   credentials: true,
   optionSuccessStatus: 200,
 };
@@ -22,6 +26,15 @@ const client = new MongoClient(uri, {
     deprecationErrors: true,
   },
 });
+
+
+const cookieOptions = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === "production" ? true : false,
+  sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+};
+
+
 async function run() {
   try {
     const asnCollection = client.db("studyHive").collection("asnmnts");
@@ -67,19 +80,19 @@ async function run() {
     });
 
     // update a assignment in db
-    app.put('/asnmnt/:id', async (req, res) =>{
-      const id = req.params.id
-      const asnmntData = req.body
-      const query = {_id: new ObjectId(id)}
-      const options = {upsert: true}
-      const updateDoc={
-        $set:{
+    app.put("/asnmnt/:id", async (req, res) => {
+      const id = req.params.id;
+      const asnmntData = req.body;
+      const query = { _id: new ObjectId(id) };
+      const options = { upsert: true };
+      const updateDoc = {
+        $set: {
           ...asnmntData,
-        }
-      }
-      const result = await asnCollection.updateOne(query, updateDoc, options)
+        },
+      };
+      const result = await asnCollection.updateOne(query, updateDoc, options);
       res.send(result);
-    })
+    });
 
     // save a take assignment in db
     app.post("/takeAsnmnt", async (req, res) => {
@@ -90,7 +103,7 @@ async function run() {
       res.send(result);
     });
 
-    await client.db("admin").command({ ping: 1 });
+    // await client.db("admin").command({ ping: 1 });
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
