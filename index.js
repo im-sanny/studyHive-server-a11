@@ -1,6 +1,8 @@
 const { MongoClient, ServerApiVersion, ObjectId } = require("mongodb");
 const express = require("express");
 const cors = require("cors");
+const jwt = require("jsonwebtoken");
+const cookieParser = require("cookie-parser");
 require("dotenv").config();
 const port = process.env.PORT || 3000;
 
@@ -16,6 +18,25 @@ const corsOptions = {
 };
 app.use(cors(corsOptions));
 app.use(express.json());
+app.use(cookieParser());
+
+// verify jwt middleware
+const verifyToken = (req, res, next) => {
+  const token = req.cookies?.token;
+  if (!token) return res.status(401).send({message: 'unauthorized access'})
+  console.log(token);
+  if (token) {
+    jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
+      if (err) {
+        console.log(err);
+        return res.status(401).send({message: 'unauthorized access'})
+      }
+      console.log(decoded);
+      req.user = decoded
+      next();
+    });
+  }
+};
 
 const uri = `mongodb+srv://${process.env.DB_USER}:${process.env.DB_PASS}@cluster0.96corz1.mongodb.net/?retryWrites=true&w=majority&appName=Cluster0`;
 
@@ -38,6 +59,33 @@ async function run() {
     const asnCollection = client.db("studyHive").collection("asnmnts");
     const takeAsnCollection = client.db("studyHive").collection("takeAsnmnts");
 
+    // jwt generate
+    app.post("/jwt", async (req, res) => {
+      const user = req.body;
+      const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
+        expiresIn: "1h",
+      });
+      res
+        .cookie("token", token, {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+        })
+        .send({ success: true });
+    });
+
+    // clear token on logout
+    app.get("/logout", (req, res) => {
+      res
+        .clearCookie("token", {
+          httpOnly: true,
+          secure: process.env.NODE_ENV === "production",
+          sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
+          maxAge: 0,
+        })
+        .send({ success: true });
+    });
+
     //get all assignment data from db
     app.get("/asnmnts", async (req, res) => {
       const result = await asnCollection.find().toArray();
@@ -45,7 +93,7 @@ async function run() {
     });
 
     // get a single assignment data
-    app.get("/asnmnt/:id", async (req, res) => {
+    app.get("/asnmnt/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await asnCollection.findOne(query);
@@ -53,7 +101,7 @@ async function run() {
     });
 
     // save a create assignment in db
-    app.post("/asnmnts", async (req, res) => {
+    app.post("/asnmnts",verifyToken, async (req, res) => {
       const asnData = req.body;
       console.log(asnData);
       const result = await asnCollection.insertOne(asnData);
@@ -69,7 +117,7 @@ async function run() {
     });
 
     // update a assignment in db
-    app.put("/asnmnt/:id", async (req, res) => {
+    app.put("/asnmnt/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const asnmntData = req.body;
       const query = { _id: new ObjectId(id) };
@@ -84,7 +132,7 @@ async function run() {
     });
 
     // save a take assignment in db
-    app.post("/takeAsnmnt", async (req, res) => {
+    app.post("/takeAsnmnt", verifyToken, async (req, res) => {
       const takeData = req.body;
       console.log(takeData);
       // return
@@ -93,15 +141,19 @@ async function run() {
     });
 
     // all assignments which are submitted by the specific user.
-    app.get("/my-submit/:email", async (req, res) => {
+    app.get("/my-submit/:email", verifyToken, async (req, res) => {
+      const tokenEmail = req.user.email
       const email = req.params.email;
+      if (tokenEmail !== email) {
+        return res.status(403).send({message: 'forbidden access'})
+      }
       const query = { email };
       const result = await takeAsnCollection.find(query).toArray();
       res.send(result);
     });
 
     // get all pending assignment
-    app.get("/pending", async (req, res) => {
+    app.get("/pending", verifyToken, async (req, res) => {
       const query = { status: "Pending" };
       const result = await takeAsnCollection.find(query).toArray();
       res.send(result);
