@@ -106,7 +106,19 @@ async function run() {
       const result = await takeAsnCollection.find(query).toArray();
       res.send(result);
     });
-    
+
+    // update assignment status
+    app.patch("/takeAsnmnt/:id", async (req, res) => {
+      const id = req.params.id;
+      const status = req.body;
+      const query = { _id: new ObjectId(id) };
+      const updateDoc = {
+        $set: status,
+      };
+      const result = await takeAsnCollection.updateOne(query, updateDoc);
+      res.send(result);
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
