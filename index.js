@@ -27,13 +27,11 @@ const client = new MongoClient(uri, {
   },
 });
 
-
 const cookieOptions = {
   httpOnly: true,
   secure: process.env.NODE_ENV === "production" ? true : false,
   sameSite: process.env.NODE_ENV === "production" ? "none" : "strict",
 };
-
 
 async function run() {
   try {
@@ -53,15 +51,6 @@ async function run() {
       const result = await asnCollection.findOne(query);
       res.send(result);
     });
-
-    // get all assignment created by specific user
-    //later
-    // app.get('/asnmnts/:email', async(req, res) =>{
-    //   const email = req.params.email
-    //   const query = {'student.email': email}
-    //   const result = await asnCollection.find(query).toArray()
-    //   res.send(result)
-    // })
 
     // save a create assignment in db
     app.post("/asnmnts", async (req, res) => {
@@ -103,7 +92,21 @@ async function run() {
       res.send(result);
     });
 
-    // await client.db("admin").command({ ping: 1 });
+    // all assignments which are submitted by the specific user.
+    app.get("/my-submit/:email", async (req, res) => {
+      const email = req.params.email;
+      const query = { email };
+      const result = await takeAsnCollection.find(query).toArray();
+      res.send(result);
+    });
+
+    // get all pending assignment
+    app.get("/pending", async (req, res) => {
+      const query = { status: "Pending" };
+      const result = await takeAsnCollection.find(query).toArray();
+      res.send(result);
+    });
+    
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
