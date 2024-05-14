@@ -63,7 +63,7 @@ async function run() {
     app.post("/jwt", async (req, res) => {
       const user = req.body;
       const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {
-        expiresIn: "1h",
+        expiresIn: "365d",
       });
       res
         .cookie("token", token, {
@@ -109,7 +109,7 @@ async function run() {
     });
 
     // delete a assignment from assignment
-    app.delete("/asnmnt/:id", async (req, res) => {
+    app.delete("/asnmnt/:id",verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await asnCollection.deleteOne(query);
