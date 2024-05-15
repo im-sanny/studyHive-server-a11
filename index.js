@@ -171,6 +171,12 @@ async function run() {
       res.send(result);
     });
 
+    //get all pending or complete assignment data from db
+    app.get("/allSubmitted", verifyToken, async (req, res) => {
+      const result = await takeAsnCollection.find().toArray();
+      res.send(result);
+    });
+
     console.log(
       "Pinged your deployment. You successfully connected to MongoDB!"
     );
