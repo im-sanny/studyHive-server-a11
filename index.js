@@ -9,7 +9,7 @@ const port = process.env.PORT || 3000;
 const app = express();
 const corsOptions = {
   origin: [
-    "http://localhost:5173",
+    "http://localhost:5174",
     "https://b9a11-a9c79.web.app",
     "https://b9a11-a9c79.firebaseapp.com",
   ],
@@ -23,16 +23,16 @@ app.use(cookieParser());
 // verify jwt middleware
 const verifyToken = (req, res, next) => {
   const token = req.cookies?.token;
-  if (!token) return res.status(401).send({message: 'unauthorized access'})
+  if (!token) return res.status(401).send({ message: "unauthorized access" });
   console.log(token);
   if (token) {
     jwt.verify(token, process.env.ACCESS_TOKEN_SECRET, (err, decoded) => {
       if (err) {
         console.log(err);
-        return res.status(401).send({message: 'unauthorized access'})
+        return res.status(401).send({ message: "unauthorized access" });
       }
       console.log(decoded);
-      req.user = decoded
+      req.user = decoded;
       next();
     });
   }
@@ -88,12 +88,19 @@ async function run() {
 
     //get all assignment data from db
     app.get("/asnmnts", async (req, res) => {
-      const result = await asnCollection.find().toArray();
+      const size = parseInt(req.query.size);
+      const page = parseInt(req.query.page) - 1;
+      console.log(size, page);
+      const result = await asnCollection
+        .find()
+        .skip(page * size)
+        .limit(size)
+        .toArray();
       res.send(result);
     });
 
     // get a single assignment data
-    app.get("/asnmnt/:id",verifyToken, async (req, res) => {
+    app.get("/asnmnt/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await asnCollection.findOne(query);
@@ -101,7 +108,7 @@ async function run() {
     });
 
     // save a create assignment in db
-    app.post("/asnmnts",verifyToken, async (req, res) => {
+    app.post("/asnmnts", verifyToken, async (req, res) => {
       const asnData = req.body;
       console.log(asnData);
       const result = await asnCollection.insertOne(asnData);
@@ -109,7 +116,7 @@ async function run() {
     });
 
     // delete a assignment from assignment
-    app.delete("/asnmnt/:id",verifyToken, async (req, res) => {
+    app.delete("/asnmnt/:id", verifyToken, async (req, res) => {
       const id = req.params.id;
       const query = { _id: new ObjectId(id) };
       const result = await asnCollection.deleteOne(query);
@@ -142,10 +149,10 @@ async function run() {
 
     // all assignments which are submitted by the specific user.
     app.get("/my-submit/:email", verifyToken, async (req, res) => {
-      const tokenEmail = req.user.email
+      const tokenEmail = req.user.email;
       const email = req.params.email;
       if (tokenEmail !== email) {
-        return res.status(403).send({message: 'forbidden access'})
+        return res.status(403).send({ message: "forbidden access" });
       }
       const query = { email };
       const result = await takeAsnCollection.find(query).toArray();
@@ -175,6 +182,18 @@ async function run() {
     app.get("/allSubmitted", verifyToken, async (req, res) => {
       const result = await takeAsnCollection.find().toArray();
       res.send(result);
+    });
+
+    //get all assignment data for pagination
+    app.get("/all-assignment", async (req, res) => {
+      const result = await asnCollection.find().toArray();
+      res.send(result);
+    });
+
+    //get all assignment data count
+    app.get("/assignment-count", async (req, res) => {
+      const count = await asnCollection.countDocuments();
+      res.send({ count });
     });
 
     console.log(
