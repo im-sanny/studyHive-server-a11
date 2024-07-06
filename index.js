@@ -90,9 +90,14 @@ async function run() {
     app.get("/asnmnts", async (req, res) => {
       const size = parseInt(req.query.size);
       const page = parseInt(req.query.page) - 1;
-      console.log(size, page);
+      const filter = req.query.filter
+      console.log(size, page, filter);
+      let query = {}
+      if (filter) query = {
+        category: filter
+      }
       const result = await asnCollection
-        .find()
+        .find(query)
         .skip(page * size)
         .limit(size)
         .toArray();
